@@ -8,8 +8,10 @@ than none).
 
 from __future__ import annotations
 
+from typing import cast
+
 import anthropic
-from anthropic.types import TextBlock
+from anthropic.types import MessageParam, TextBlock
 
 from .agent import Message, ModelReply
 
@@ -30,7 +32,7 @@ class AnthropicModel:
             model=self._model,
             max_tokens=self._max_tokens,
             system=system,
-            messages=messages,  # type: ignore[arg-type]
+            messages=cast("list[MessageParam]", messages),
         )
         text = "".join(b.text for b in resp.content if isinstance(b, TextBlock))
         cost = (
