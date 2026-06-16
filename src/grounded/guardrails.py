@@ -94,7 +94,10 @@ class BudgetTracker:
     def record(self, cost_usd: float) -> bool:
         """Record actual spend. Returns True once when the alert is first crossed."""
         self.spent_usd += cost_usd
-        if not self._alerted and self.spent_usd >= self.ceiling_usd * self.alert_fraction:
+        if (
+            not self._alerted
+            and self.spent_usd >= self.ceiling_usd * self.alert_fraction
+        ):
             self._alerted = True
             return True
         return False

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from grounded.agent import REFUSAL, Assistant, Deps, Message, ModelReply
 from grounded.guardrails import BudgetTracker, RateLimiter, RedactionFilter
-from grounded.retrieval import Retriever, chunk_document
+from grounded.retrieval import Chunk, Retriever, chunk_document
 
 
 class FakeModel:
@@ -30,7 +30,7 @@ def _clock() -> float:
     return 0.0
 
 
-def _deps(model: FakeModel, chunks: list) -> Deps:
+def _deps(model: FakeModel, chunks: list[Chunk]) -> Deps:
     return Deps(
         retriever=Retriever(chunks),
         redaction=RedactionFilter(),
