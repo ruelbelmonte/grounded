@@ -1,0 +1,33 @@
+[project]
+name = "grounded"
+version = "0.1.0"
+description = "A guardrailed retrieval assistant for high-stakes domains"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[project.scripts]
+grounded = "grounded.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
