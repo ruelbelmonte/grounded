@@ -1,4 +1,4 @@
-"""The guardrail layer: the properties this system must never violate.
+"""The guardrail layer: egress filtering, rate limiting, budget enforcement.
 
 Each guardrail is deterministic and unit-tested. Nothing here depends on the
 model behaving well. Time is injected (a ``clock`` callable) so the rate limiter
@@ -19,9 +19,36 @@ from dataclasses import dataclass, field
 # possible format. Redaction is a last gate, not a reason to put secrets in
 # context in the first place.
 _EMAIL = re.compile(r"\b[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
-_NZ_PHONE = re.compile(r"\b(?:\+?64|0)2\d(?:[ -]?\d){6,8}\b")
-# NZ NHI: 3 letters then 4 digits (legacy) or 3 letters, 2 digits, 2 alnum (new).
-_NHI = re.compile(r"\b[A-HJ-NP-Z]{3}\d{2}(?:\d{2}|[A-HJ-NP-Z]{2})\b")
+# Lookbehind instead of \b so a leading "+64" is consumed, not left behind.
+_NZ_MOBILE = re.compile(r"(?<![\w+])(?:\+?64[ -]?|0)2\d(?:[ -]?\d){6,8}\b")
+# NZ NHI: 3 letters then 4 digits (legacy) or 3 letters, 2 digits, 2 letters
+# (new). ASCII mode so case folding cannot match look-alikes such as the Kelvin
+# sign.
+_NHI = re.compile(
+    r"\b[A-HJ-NP-Z]{3}\d{2}(?:\d{2}|[A-HJ-NP-Z]{2})\b", re.IGNORECASE | re.ASCII
+)
+_NHI_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+
+def _is_valid_nhi(candidate: str) -> bool:
+    """Check character per the NZ NHI standard: weights 7..2 over the first six
+    characters (letters A=1..Z=24, skipping I and O), then mod 11 (legacy,
+    numeric check) or mod 24 (new, alphabetic check)."""
+    nhi = candidate.upper()
+    values = [int(c) if c.isdigit() else _NHI_ALPHABET.index(c) + 1 for c in nhi[:6]]
+    total = sum(v * w for v, w in zip(values, range(7, 1, -1), strict=True))
+    if nhi[6].isdigit():
+        remainder = total % 11
+        return remainder != 0 and str((11 - remainder) % 10) == nhi[6]
+    return _NHI_ALPHABET[23 - total % 24] == nhi[6]
+
+
+def _redact_nhi(match: re.Match[str]) -> str:
+    # Fail closed: a mistyped NHI still identifies someone, so the check
+    # character only picks the label, never whether to redact.
+    if _is_valid_nhi(match.group()):
+        return "[REDACTED_NHI]"
+    return "[REDACTED_NHI_CANDIDATE]"
 
 
 class RedactionFilter:
@@ -29,14 +56,19 @@ class RedactionFilter:
 
     def __init__(self, blocked_secrets: tuple[str, ...] = ()) -> None:
         # Longest first so a secret that contains another is masked whole.
-        self._secrets = sorted((s for s in blocked_secrets if s), key=len, reverse=True)
+        secrets = sorted({s for s in blocked_secrets if s}, key=len, reverse=True)
+        self._secrets = (
+            re.compile("|".join(map(re.escape, secrets)), re.IGNORECASE)
+            if secrets
+            else None
+        )
 
     def scrub(self, text: str) -> str:
-        for secret in self._secrets:
-            text = text.replace(secret, "[REDACTED_SECRET]")
+        if self._secrets is not None:
+            text = self._secrets.sub("[REDACTED_SECRET]", text)
         text = _EMAIL.sub("[REDACTED_EMAIL]", text)
-        text = _NZ_PHONE.sub("[REDACTED_PHONE]", text)
-        text = _NHI.sub("[REDACTED_NHI]", text)
+        text = _NZ_MOBILE.sub("[REDACTED_PHONE]", text)
+        text = _NHI.sub(_redact_nhi, text)
         return text
 
 
