@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from grounded.retrieval import Retriever, chunk_document
 
 
@@ -28,3 +30,9 @@ def test_search_ranks_relevant_chunk_first() -> None:
 def test_search_returns_empty_when_nothing_matches() -> None:
     r = Retriever(chunk_document("policy", "# A\n\napples and oranges"))
     assert r.search("quantum chromodynamics") == []
+
+
+def test_common_words_alone_do_not_count_as_a_match() -> None:
+    corpus = Path(__file__).resolve().parents[1] / "sample_corpus"
+    r = Retriever.from_corpus_dir(corpus)
+    assert r.search("What is the capital of France?") == []

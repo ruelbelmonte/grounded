@@ -2,8 +2,8 @@
 
 Baseline implemented here: deterministic keyword retrieval with structure-aware
 chunking. It needs no API key and no model, so it is fully unit-tested. The
-semantic half of the intended hybrid design is the next layer and is left as a
-documented DECIDE item (embedding model, vector store, merge method) in
+semantic half of the intended hybrid design is the next layer; its open
+decisions (embedding model, vector store, merge method) are listed in
 DESIGN.md. Keyword-only is a defensible baseline for a small, well-structured
 corpus and an honest starting point.
 """
@@ -18,6 +18,15 @@ from pathlib import Path
 
 _WORD = re.compile(r"[a-z0-9]+")
 _HEADING = re.compile(r"^#{1,6}\s+(.*)$")
+
+# Without these, any question sharing "the" or "what" with the corpus retrieves
+# something, and refuse-when-ungrounded (DESIGN.md s5) never fires.
+_STOPWORD_TEXT = (
+    "a an and are as at be but by can do does for from has have how i if in is it "
+    "its me my of on or our so that the their them then there they this to was we "
+    "what when where which who why will with you your"
+)
+_STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 
 
 @dataclass(frozen=True)
@@ -37,7 +46,7 @@ class Hit:
 
 
 def _tokens(text: str) -> list[str]:
-    return _WORD.findall(text.lower())
+    return [t for t in _WORD.findall(text.lower()) if t not in _STOPWORDS]
 
 
 def chunk_document(doc_id: str, text: str) -> list[Chunk]:
@@ -81,7 +90,7 @@ class Retriever:
                 self._postings[tok].append(i)
 
     @classmethod
-    def from_corpus_dir(cls, corpus_dir: str | Path) -> "Retriever":
+    def from_corpus_dir(cls, corpus_dir: str | Path) -> Retriever:
         chunks: list[Chunk] = []
         for path in sorted(Path(corpus_dir).glob("**/*")):
             if path.suffix.lower() in {".md", ".txt"} and path.is_file():
