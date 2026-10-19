@@ -78,7 +78,7 @@ Runnable baseline.
 - **Done and tested (no API key needed):** the guardrail layer (redaction, rate
   limit, budget), structure-aware chunking, keyword retrieval, and the agent's
   safety behaviour (prompt separation, refusal on empty retrieval, egress
-  filtering of model output). 14 tests, green.
+  filtering of model output). 18 tests, green.
 - **Wired, needs a key to run live:** `grounded ask` against the bundled
   synthetic `sample_corpus/`, via the Anthropic adapter.
 - **Not done yet:** semantic retrieval (open decisions in DESIGN.md), wiring

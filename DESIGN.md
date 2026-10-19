@@ -85,9 +85,9 @@ chattier bot would attempt. That is the intended behaviour.
 **Limit.** The code-level refusal fires only when retrieval finds nothing.
 Common words are excluded from matching, so "What is the capital of France?"
 retrieves nothing and is refused without a model call. A question that is on
-topic but unanswerable ("What is the maximum fine under this policy?") still
-shares words with the corpus, so it reaches the model, and refusing it is then
-the system prompt's job. That second case is behavioural, which is what the
+topic but unanswerable ("What is the maximum fine for a privacy breach under
+this policy?") still shares a word with the corpus ("privacy"), so it reaches
+the model, and refusing it is then the system prompt's job. That second case is behavioural, which is what the
 evals in `evals/` exist to measure.
 
 ## 6. Bounded, read-only agent loop

@@ -18,13 +18,18 @@ from pathlib import Path
 
 _WORD = re.compile(r"[a-z0-9]+")
 _HEADING = re.compile(r"^#{1,6}\s+(.*)$")
+# Text inside these is for human readers only (e.g. a corpus disclaimer) and is
+# never indexed, so retrieval cannot match on it.
+_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 
 # Without these, any question sharing "the" or "what" with the corpus retrieves
 # something, and refuse-when-ungrounded (DESIGN.md s5) never fires.
 _STOPWORD_TEXT = (
-    "a an and are as at be but by can do does for from has have how i if in is it "
-    "its me my of on or our so that the their them then there they this to was we "
-    "what when where which who why will with you your"
+    "a about all also am an and any are as at be been being but by can could did "
+    "do does for from get got had has have how i if in into is it its just may me "
+    "might must my no not of on or our should so some than that the their them "
+    "then there these they this those to too very was we were what when where "
+    "which who why will with would you your"
 )
 _STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 
@@ -52,7 +57,7 @@ def _tokens(text: str) -> list[str]:
 def chunk_document(doc_id: str, text: str) -> list[Chunk]:
     """Split a document into chunks on blank lines, tracking the most recent
     markdown heading as the section label. Structure-aware enough that each
-    chunk carries where it came from."""
+    chunk carries where it came from. HTML comments are dropped."""
     chunks: list[Chunk] = []
     section = doc_id
     buf: list[str] = []
@@ -63,7 +68,7 @@ def chunk_document(doc_id: str, text: str) -> list[Chunk]:
             chunks.append(Chunk(doc_id=doc_id, section=section, text=body))
         buf.clear()
 
-    for line in text.splitlines():
+    for line in _COMMENT.sub("", text).splitlines():
         heading = _HEADING.match(line.strip())
         if heading:
             flush()
