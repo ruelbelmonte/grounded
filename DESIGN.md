@@ -1,9 +1,7 @@
 # Design decisions
 
-This is the document to read in an interview. Each decision states what was
-chosen, what was rejected, why, and what it cost. Decisions still open are
-marked `DECIDE:` with the tradeoff laid out, so the choice is made and owned
-rather than copied.
+Each decision states what was chosen, what was rejected, why, and what it
+cost. Decisions still open are listed at the end with the tradeoff laid out.
 
 ## 1. Guardrails are code, not prompt requests
 
@@ -82,8 +80,15 @@ that." The eval harness (`evals/`) measures the refusal rate on questions whose
 answers are deliberately not in the corpus.
 
 **Cost.** Lower apparent coverage; the assistant will decline questions a
-chattier bot would attempt. That is the intended behaviour, and the evals prove
-it is working rather than just claimed.
+chattier bot would attempt. That is the intended behaviour.
+
+**Limit.** The code-level refusal fires only when retrieval finds nothing.
+Common words are excluded from matching, so "What is the capital of France?"
+retrieves nothing and is refused without a model call. A question that is on
+topic but unanswerable ("What is the maximum fine under this policy?") still
+shares words with the corpus, so it reaches the model, and refusing it is then
+the system prompt's job. That second case is behavioural, which is what the
+evals in `evals/` exist to measure.
 
 ## 6. Bounded, read-only agent loop
 
@@ -112,27 +117,22 @@ done and tested. Keyword-only is a defensible starting point for a small,
 well-structured corpus; the cost is weaker recall on paraphrased queries, which
 is exactly what the semantic layer below is for.
 
-## Open decisions (DECIDE before building semantic retrieval)
+## Open decisions (before building semantic retrieval)
 
-These are real tradeoffs. Pick, implement, and write the choice up here in the
-same format as above. They are the questions an interviewer will ask, so the
-answer should be yours.
+Each gets written up in the same format as above once it is made.
 
-**DECIDE: embedding model.** Local (e.g. a sentence-transformers model, no API
+**Embedding model.** Local (e.g. a sentence-transformers model, no API
 cost, runs offline, weaker on domain text) vs hosted (better quality, per-call
-cost, network dependency). State the latency, cost, and quality tradeoff you
-chose and why.
+cost, network dependency). The latency, cost, and quality tradeoff decides it.
 
-**DECIDE: vector store.** In-memory / FAISS / sqlite-vss / a hosted store. For
+**Vector store.** In-memory / FAISS / sqlite-vss / a hosted store. For
 a demo corpus of this size, an in-memory or sqlite-backed index is almost
-certainly correct, and "I did not reach for a hosted vector DB because the
-corpus is small" is itself a good answer. Justify it.
+certainly correct; a hosted vector DB is not justified at this corpus size.
 
-**DECIDE: chunking strategy.** Fixed-size vs structure-aware (split on the
+**Chunking strategy.** Fixed-size vs structure-aware (split on the
 Act's sections and clauses). Structure-aware retrieval is more work and far
-better for a legal corpus, because a returned clause is a citable unit. State
-what you chose and the retrieval-quality cost of the simpler option.
+better for a legal corpus, because a returned clause is a citable unit. The
+baseline already splits on headings.
 
-**DECIDE: hybrid merge.** How semantic and keyword results are combined
-(reciprocal rank fusion, weighted score, keyword-as-filter). Name the method
-and why.
+**Hybrid merge.** How semantic and keyword results are combined
+(reciprocal rank fusion, weighted score, keyword-as-filter).
