@@ -12,7 +12,6 @@ from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-
 # --- Egress filtering (DESIGN.md section 3) --------------------------------
 
 # Backstop redaction patterns. These are intentionally conservative and their

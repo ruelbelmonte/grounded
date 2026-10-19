@@ -1,9 +1,13 @@
-# Sample corpus (synthetic)
+<!--
+Sample corpus (synthetic).
 
 This is SYNTHETIC demo content for a fictional organisation, written only to
 exercise the retrieval and refusal behaviour. It is not real law or real policy.
 For a real demo, drop public reference text (for example the NZ Privacy Act 2020
 or the OWASP Top 10) into `data/corpus/`, which is gitignored.
+
+The retriever does not index HTML comments, so this note cannot ground an answer.
+-->
 
 # Access to personal information
 
