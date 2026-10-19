@@ -25,7 +25,7 @@ class Config:
     blocked_secrets: tuple[str, ...] = ()
 
     @staticmethod
-    def from_env() -> "Config":
+    def from_env() -> Config:
         key = os.environ.get("ANTHROPIC_API_KEY")
         if not key:
             raise RuntimeError("ANTHROPIC_API_KEY is required")
