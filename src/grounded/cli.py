@@ -32,7 +32,11 @@ def main() -> int:
         return 2
 
     question = " ".join(args[1:])
-    cfg = Config.from_env()
+    try:
+        cfg = Config.from_env()
+    except RuntimeError as exc:
+        print(f"grounded: {exc}", file=sys.stderr)
+        return 2
 
     # Imported here so the test suite never needs the SDK or an API key.
     from .anthropic_model import AnthropicModel

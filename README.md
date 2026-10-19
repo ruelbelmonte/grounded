@@ -118,7 +118,7 @@ Runnable baseline.
 - **Done and tested (no API key needed):** the guardrail layer (redaction, rate
   limit, budget), structure-aware chunking, keyword retrieval, and the agent's
   safety behaviour (prompt separation, refusal on empty retrieval, egress
-  filtering of model output, delimited context), CLI budget handling. 36
+  filtering of model output, delimited context), CLI error handling. 37
   tests pass; 8 more are strict `xfail` tests that pin the known redaction gaps.
 - **Wired, needs a key to run live:** `grounded ask` against the bundled
   synthetic `sample_corpus/`, via the Anthropic adapter.

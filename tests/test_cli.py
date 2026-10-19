@@ -34,3 +34,13 @@ def test_budget_exceeded_exits_non_zero_with_a_clean_message(
     err = capsys.readouterr().err
     assert "budget ceiling reached" in err
     assert "Traceback" not in err
+
+
+def test_missing_api_key_exits_non_zero_with_a_clean_message(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["grounded", "ask", "request access"])
+
+    assert cli.main() == 2
+    assert "ANTHROPIC_API_KEY is required" in capsys.readouterr().err
