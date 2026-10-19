@@ -27,7 +27,14 @@ high-stakes domain and the wrong one for a toy.
 
 **Decision.** User-supplied text is only ever passed as a user message. It is
 never concatenated into the system string. This is enforced by the message-
-building code and pinned by `test_user_text_never_enters_system`.
+building code and pinned by `test_user_text_never_enters_system`. Within the
+user message, retrieved chunks sit inside `<context>` and the question inside
+`<question>`, with `<`, `>` and `&` escaped in both, so a question cannot close
+its tag and forge a context block (`test_user_cannot_forge_a_context_block`).
+
+**Limit.** This is structural separation. It makes injection harder; it does
+not prove the model ignores instructions inside the question. That is
+behavioural and is what the injection evals in `evals/` are for.
 
 **Rejected.** Templating user input into a single combined prompt. Convenient,
 and the standard shape of most tutorial RAG code, but it is the exact mechanism
@@ -39,19 +46,22 @@ prompt injection exploits.
 
 **Decision.** Every reply passes through a redaction filter at the boundary
 before it leaves the process. It redacts personal-identifier patterns (email,
-NZ phone, NHI-shaped tokens) and blocks any configured secret value, replacing
-it rather than emitting it.
+NZ mobile, NHI numbers whose check character validates) and any configured
+secret value (exact, case-insensitive match), replacing it rather than
+emitting it.
 
 **Rejected.** Trusting that the model "won't say anything it shouldn't."
 
 **Why.** The model sees retrieved context and user input; either could contain
-something that must not be echoed. The cheapest place to guarantee it does not
-leave is the last gate before it leaves.
+something that must not be echoed. The cheapest place to mitigate that is the
+last gate before the reply leaves.
 
 **Cost.** Pattern-based redaction has false positives (a legitimate string that
 looks like an identifier) and false negatives (a novel format). It is a
 backstop, not a substitute for not putting secrets in context in the first
-place. The tests document the patterns it does and does not catch.
+place. It filters only the reply: the question and retrieved context reach the
+model provider unfiltered. The tests document the patterns it does and does
+not catch, with strict `xfail` tests for the known gaps (README, Limitations).
 
 ## 4. Hard budget ceiling, tracked in code
 
@@ -65,7 +75,9 @@ the account, not a single abusive session. An in-process ceiling fails fast and
 cheap. Both layers exist; this is the fast one.
 
 **Cost.** Process-local state resets on restart, so the in-process total is not
-durable across deploys. The provider-side limit is the durable backstop. This
+durable across deploys. The CLI runs one process per question, so there the
+ceiling (and the rate limit) reset on every run and bound nothing; they matter
+in a long-running process. The provider-side limit is the durable backstop. This
 tradeoff is stated, not hidden, because pretending the in-process counter is
 authoritative would be the kind of overclaim that fails under questioning.
 
