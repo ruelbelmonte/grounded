@@ -19,9 +19,8 @@ class Config:
     requests_per_hour: int = 60
     monthly_budget_usd: float = 20.0
     budget_alert_fraction: float = 0.8
-    max_agent_steps: int = 4
-    # Secret values that must never appear in an outgoing reply. Loaded from the
-    # environment so the list itself is never hard-coded.
+    # Values the egress filter redacts from replies (exact, case-insensitive
+    # match). Loaded from the environment so the list is never hard-coded.
     blocked_secrets: tuple[str, ...] = ()
 
     @staticmethod

@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .agent import Assistant, Deps
 from .config import Config
-from .guardrails import BudgetTracker, RateLimiter, RedactionFilter
+from .guardrails import BudgetExceeded, BudgetTracker, RateLimiter, RedactionFilter
 from .retrieval import Retriever
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -32,7 +32,11 @@ def main() -> int:
         return 2
 
     question = " ".join(args[1:])
-    cfg = Config.from_env()
+    try:
+        cfg = Config.from_env()
+    except RuntimeError as exc:
+        print(f"grounded: {exc}", file=sys.stderr)
+        return 2
 
     # Imported here so the test suite never needs the SDK or an API key.
     from .anthropic_model import AnthropicModel
@@ -44,7 +48,13 @@ def main() -> int:
         budget=BudgetTracker(cfg.monthly_budget_usd, cfg.budget_alert_fraction),
         model=AnthropicModel(cfg.anthropic_api_key, cfg.model),
     )
-    print(Assistant(deps).ask(user_id="cli", question=question))
+    try:
+        print(Assistant(deps).ask(user_id="cli", question=question))
+    except BudgetExceeded as exc:
+        print(
+            f"grounded: budget ceiling reached, no call made ({exc})", file=sys.stderr
+        )
+        return 1
     return 0
 
 
