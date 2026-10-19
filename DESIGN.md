@@ -46,9 +46,10 @@ prompt injection exploits.
 
 **Decision.** Every reply passes through a redaction filter at the boundary
 before it leaves the process. It redacts personal-identifier patterns (email,
-NZ mobile, NHI numbers whose check character validates) and any configured
-secret value (exact, case-insensitive match), replacing it rather than
-emitting it.
+NZ mobile, NHI-shaped tokens whether or not the check character validates)
+and any configured secret value (exact, case-insensitive match), replacing it
+rather than emitting it. It fails closed: a token that merely looks like an NHI
+is redacted, accepting false positives over a missed identifier.
 
 **Rejected.** Trusting that the model "won't say anything it shouldn't."
 

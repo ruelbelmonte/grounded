@@ -22,8 +22,8 @@ _EMAIL = re.compile(r"\b[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
 # Lookbehind instead of \b so a leading "+64" is consumed, not left behind.
 _NZ_MOBILE = re.compile(r"(?<![\w+])(?:\+?64[ -]?|0)2\d(?:[ -]?\d){6,8}\b")
 # NZ NHI: 3 letters then 4 digits (legacy) or 3 letters, 2 digits, 2 letters
-# (new). Candidates are kept only if the check character validates. ASCII mode
-# so case folding cannot match look-alikes such as the Kelvin sign.
+# (new). ASCII mode so case folding cannot match look-alikes such as the Kelvin
+# sign.
 _NHI = re.compile(
     r"\b[A-HJ-NP-Z]{3}\d{2}(?:\d{2}|[A-HJ-NP-Z]{2})\b", re.IGNORECASE | re.ASCII
 )
@@ -44,7 +44,11 @@ def _is_valid_nhi(candidate: str) -> bool:
 
 
 def _redact_nhi(match: re.Match[str]) -> str:
-    return "[REDACTED_NHI]" if _is_valid_nhi(match.group()) else match.group()
+    # Fail closed: a mistyped NHI still identifies someone, so the check
+    # character only picks the label, never whether to redact.
+    if _is_valid_nhi(match.group()):
+        return "[REDACTED_NHI]"
+    return "[REDACTED_NHI_CANDIDATE]"
 
 
 class RedactionFilter:

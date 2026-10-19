@@ -87,12 +87,17 @@ The redaction gaps below are pinned by strict `xfail` tests, so closing one
 fails the suite until this list is updated.
 
 - **PII redaction is pattern-based.** It catches email addresses, NZ mobile
-  numbers (`021 000 0000`, `+64 21 000 0000` and similar), and NHI numbers in
-  either format and any case whose check character validates. It misses NZ
-  landlines (`(04) 000 0000`, `+64 4 000 0000`), dates of birth, IRD numbers,
-  card numbers, personal names, and any format it has no pattern for. NHI
-  candidates that fail the check digit are left alone: that avoids false
-  positives such as `AWS2023`, but a mistyped NHI is not redacted.
+  numbers (`021 000 0000`, `+64 21 000 0000` and similar), and NHI-shaped
+  tokens in either format and any case. It misses NZ landlines
+  (`(04) 000 0000`, `+64 4 000 0000`), dates of birth, IRD numbers, card
+  numbers, personal names, and any format it has no pattern for.
+- **NHI redaction over-redacts on purpose.** Every NHI-shaped token is
+  redacted, valid check character or not, because a mistyped NHI still
+  identifies someone. The check character only picks the label:
+  `[REDACTED_NHI]` when it validates, `[REDACTED_NHI_CANDIDATE]` otherwise.
+  The accepted cost is false positives: ordinary tokens of the same shape,
+  such as `AWS2023`, are redacted too. For a health-data egress filter,
+  failing closed beats failing open.
 - **The secret filter is exact-match** (case-insensitive) against the values in
   `GROUNDED_BLOCKED_SECRETS`. A partial, split, encoded, or reformatted secret
   is not caught.
@@ -119,7 +124,7 @@ Runnable baseline.
   limit, budget), structure-aware chunking, keyword retrieval, and the agent's
   safety behaviour (prompt separation, refusal on empty retrieval, egress
   filtering of model output, delimited context), CLI error handling. 37
-  tests pass; 8 more are strict `xfail` tests that pin the known redaction gaps.
+  tests pass; 7 more are strict `xfail` tests that pin the known redaction gaps.
 - **Wired, needs a key to run live:** `grounded ask` against the bundled
   synthetic `sample_corpus/`, via the Anthropic adapter.
 - **Not done yet:** semantic retrieval (open decisions in DESIGN.md), wiring
